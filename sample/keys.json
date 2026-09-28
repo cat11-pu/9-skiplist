@@ -1,0 +1,13 @@
+{
+  "state": { "levels": [], "finds": [], "paths": [], "inserted": 0, "removed": 0, "compares": 0 },
+  "events": [
+    { "kind": "insert", "key": 5 },
+    { "kind": "insert", "key": 3 },
+    { "kind": "insert", "key": 6 },
+    { "kind": "find", "key": 6 },
+    { "kind": "insert", "key": 7 },
+    { "kind": "find", "key": 4 },
+    { "kind": "remove", "key": 3 },
+    { "kind": "find", "key": 7 }
+  ]
+}

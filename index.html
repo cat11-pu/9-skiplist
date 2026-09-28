@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>skiplist 分层索引</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;background:#0b1020;color:#e6ecff}
+.wrap{display:grid;grid-template-columns:minmax(420px,1fr) 320px;gap:16px;padding:18px;align-items:start}
+.card{background:#141b31;border:1px solid #223055;border-radius:12px;padding:12px}
+svg{background:#0e1528;border-radius:10px}
+button{font:inherit;padding:5px 11px;margin:0 8px 8px 0;border:1px solid #2b3c66;border-radius:8px;background:#1b2440;color:#e6ecff;cursor:pointer}
+button.main{background:#3b6ef5;border-color:#3b6ef5}
+input{font:inherit;padding:4px 8px;border:1px solid #2b3c66;border-radius:8px;background:#0b1224;color:#e6ecff;width:84px}
+pre{background:#080d1a;color:#9fd0ff;padding:10px;border-radius:8px;overflow:auto;font-size:12px}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:#1f2c4d;color:#9fd0ff;margin-right:6px}
+.chip.bad{background:#3a1f2b;color:#ff9aa9}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <svg id="graph" width="720" height="340" viewBox="0 0 720 340"></svg>
+    <div id="legend" style="margin-top:8px"></div>
+    <pre id="out">还没跑</pre>
+  </div>
+  <div class="card">
+    <h2 style="font-size:13px;color:#8ea2cc;margin:0 0 8px">操作</h2>
+    <div>键 <input id="key" type="number" value="4"></div>
+    <div><button id="doInsert" class="main">插入</button><button id="doFind">查找</button><button id="doRemove">删除</button></div>
+    <div id="log" style="font-size:12px;color:#8ea2cc;margin-top:8px">点上面的按钮开始。</div>
+  </div>
+</div>
+<div id="scene" hidden>{
+  "state": { "levels": [], "finds": [], "paths": [], "inserted": 0, "removed": 0, "compares": 0 },
+  "events": [
+    { "kind": "insert", "key": 5 },
+    { "kind": "insert", "key": 3 },
+    { "kind": "insert", "key": 6 },
+    { "kind": "find", "key": 6 },
+    { "kind": "insert", "key": 7 },
+    { "kind": "find", "key": 4 },
+    { "kind": "remove", "key": 3 },
+    { "kind": "find", "key": 7 }
+  ]
+}</div>
+<script type="module">
+import { render } from "./app.js";
+
+const spec = JSON.parse(document.getElementById("scene").textContent);
+const svg = document.getElementById("graph");
+function draw() {
+  const view = render(spec);
+  document.getElementById("out").textContent = JSON.stringify(view, null, 1);
+  svg.textContent = "";
+  const levels = view.levels || [];
+  const ns = "http://www.w3.org/2000/svg";
+  const lastPath = (view.paths || []).length > 0 ? view.paths[view.paths.length - 1] : [];
+  const stopAt = {};
+  lastPath.forEach(function (step) { stopAt[step[0]] = step[1]; });
+  const height = 60;
+  for (let spot = levels.length - 1; spot >= 0; spot -= 1) {
+    const y = 30 + (levels.length - 1 - spot) * height;
+    const label = document.createElementNS(ns, "text");
+    label.setAttribute("x", 8); label.setAttribute("y", y + 5);
+    label.setAttribute("fill", "#8ea2cc"); label.setAttribute("font-size", "12");
+    label.textContent = "L" + (spot + 1);
+    svg.appendChild(label);
+    let x = 48;
+    const head = document.createElementNS(ns, "circle");
+    head.setAttribute("cx", x); head.setAttribute("cy", y); head.setAttribute("r", 5);
+    head.setAttribute("fill", "#3b4a72");
+    svg.appendChild(head);
+    levels[spot].forEach(function (key) {
+      x += 64;
+      const dot = document.createElementNS(ns, "circle");
+      dot.setAttribute("cx", x); dot.setAttribute("cy", y);
+      dot.setAttribute("r", stopAt[spot + 1] === key ? 11 : 8);
+      dot.setAttribute("fill", stopAt[spot + 1] === key ? "#f5b73b" : "#3b6ef5");
+      svg.appendChild(dot);
+      const text = document.createElementNS(ns, "text");
+      text.setAttribute("x", x - 5); text.setAttribute("y", y + 4);
+      text.setAttribute("fill", "#06101f"); text.setAttribute("font-size", "11");
+      text.textContent = String(key);
+      svg.appendChild(text);
+    });
+  }
+  const legend = document.getElementById("legend");
+  legend.textContent = "";
+  const chip = function (label, bad) {
+    const span = document.createElement("span");
+    span.className = bad ? "chip bad" : "chip";
+    span.textContent = label;
+    legend.appendChild(span);
+  };
+  chip("最高层 " + view.top);
+  chip("键数 " + view.keys);
+  chip("比较总计 " + view.compares);
+  chip("上界内 " + view.bound_ok, !view.bound_ok);
+}
+document.getElementById("doInsert").addEventListener("click", function () {
+  spec.events.push({ kind: "insert", key: Number(document.getElementById("key").value) });
+  draw();
+});
+document.getElementById("doFind").addEventListener("click", function () {
+  spec.events.push({ kind: "find", key: Number(document.getElementById("key").value) });
+  draw();
+});
+document.getElementById("doRemove").addEventListener("click", function () {
+  spec.events.push({ kind: "remove", key: Number(document.getElementById("key").value) });
+  draw();
+});
+draw();
+</script>
+</body>
+</html>
